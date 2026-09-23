@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>초등 5학년 날씨 탐험대</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    button,
+    input {
+      font-family: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .container {
+      width: min(1100px, calc(100% - 30px));
+      margin: 0 auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid #e2e8f0;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-inner {
+      padding: 15px 0;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      display: grid;
+      place-items: center;
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      background: #2563eb;
+      font-size: 28px;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .search-area {
+      display: flex;
+      gap: 7px;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    #cityInput {
+      width: 270px;
+      height: 43px;
+      padding: 0 90px 0 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      outline: none;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    #cityInput:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px #dbeafe;
+    }
+
+    #searchButton {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      height: 33px;
+      padding: 0 13px;
+      border: none;
+      border-radius: 9px;
+      background: #2563eb;
+      color: white;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    #locationButton {
+      height: 43px;
+      padding: 0 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: white;
+      color: #1d4ed8;
+      font-weight: bold;
+    }
+
+    #searchResults {
+      display: none;
+      position: absolute;
+      top: 48px;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 15px 30px rgba(15, 23, 42, 0.2);
+    }
+
+    .search-result {
+      display: block;
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-bottom: 1px solid #e2e8f0;
+      background: white;
+      text-align: left;
+    }
+
+    .search-result:hover {
+      background: #eff6ff;
+    }
+
+    .search-result strong,
+    .search-result small {
+      display: block;
+    }
+
+    .search-result small {
+      margin-top: 3px;
+      color: #64748b;
+    }
+
+    .city-buttons {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding-top: 13px;
+      padding-bottom: 2px;
+    }
+
+    .city-button {
+      flex: 0 0 auto;
+      padding: 7px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      background: white;
+      color: #475569;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .city-button:hover,
+    .city-button.active {
+      border-color: #2563eb;
+      background: #2563eb;
+      color: white;
+    }
+
+    main {
+      padding: 22px 0 40px;
+    }
+
+    #loading {
+      display: grid;
+      min-height: 55vh;
+      place-items: center;
+      text-align: center;
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 13px;
+      border: 5px solid #dbeafe;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #errorBox {
+      display: none;
+      margin-bottom: 15px;
+      padding: 13px;
+      border-radius: 12px;
+      background: #fef2f2;
+      color: #b91c1c;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    #content {
+      display: none;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 30px;
+      border-radius: 30px;
+      background: linear-gradient(135deg, #38bdf8, #2563eb, #4338ca);
+      color: white;
+      box-shadow: 0 17px 35px rgba(37, 99, 235, 0.24);
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -100px;
+      right: -80px;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      content: "";
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 290px;
+      gap: 25px;
+      align-items: center;
+    }
+
+    .location-name,
+    .date-text {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .date-text {
+      margin-top: 8px;
+    }
+
+    .current-weather {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      margin-top: 20px;
+    }
+
+    .weather-emoji {
+      font-size: 85px;
+    }
+
+    .temperature {
+      font-size: 70px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: -5px;
+    }
+
+    .condition {
+      margin-top: 7px;
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .weather-tip {
+      margin-top: 20px;
+      padding: 13px 15px;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.15);
+      line-height: 1.6;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .today-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 17px;
+      padding: 19px;
+      border-radius: 23px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .today-summary small {
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: bold;
+    }
+
+    .today-summary strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 19px;
+    }
+
+    .section {
+      margin-top: 28px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+
+    .section-title p {
+      margin: 0 0 4px;
+      color: #2563eb;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #refreshButton {
+      padding: 8px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .required-grid,
+    .extra-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .required-grid {
+      grid-template-columns: repeat(5, 1fr);
+    }
+
+    .extra-grid {
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 12px;
+    }
+
+    .weather-card {
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 19px;
+      background: white;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .card-icon {
+      float: right;
+      font-size: 23px;
+    }
+
+    .card-label {
+      color: #64748b;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .card-value {
+      margin-top: 8px;
+      font-size: 25px;
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
+
+    .card-unit {
+      margin-left: 3px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .card-note {
+      margin-top: 9px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+    }
+
+    .forecast-day {
+      padding: 15px 7px;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: white;
+      text-align: center;
+    }
+
+    .forecast-day.today {
+      border-color: #60a5fa;
+      background: #eff6ff;
+    }
+
+    .day-name {
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .day-emoji {
+      margin: 10px 0;
+      font-size: 35px;
+    }
+
+    .day-condition {
+      height: 30px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .high {
+      color: #ef4444;
+      font-weight: bold;
+    }
+
+    .low {
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    .rain-chance {
+      margin-top: 8px;
+      color: #2563eb;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .learning-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 13px;
+    }
+
+    .learning-card {
+      padding: 20px;
+      border-radius: 22px;
+      line-height: 1.7;
+    }
+
+    .learning-card h3 {
+      margin: 0 0 7px;
+    }
+
+    .learning-card p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .green {
+      border: 1px solid #bbf7d0;
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .yellow {
+      border: 1px solid #fde68a;
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+    footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    @media (max-width: 850px) {
+      .header-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-area {
+        width: 100%;
+      }
+
+      .search-box {
+        flex: 1;
+      }
+
+      #cityInput {
+        width: 100%;
+      }
+
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .required-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .extra-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .forecast-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .container {
+        width: calc(100% - 20px);
+      }
+
+      .hero {
+        padding: 21px;
+      }
+
+      .weather-emoji {
+        font-size: 60px;
+      }
+
+      .temperature {
+        font-size: 55px;
+      }
+
+      .forecast-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .learning-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #locationButton {
+        padding: 0 10px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="container header-inner">
+
+    <div class="header-row">
+
+      <div class="brand">
+        <div class="logo">🌦️</div>
+
+        <div>
+          <h1>날씨 탐험대</h1>
+          <p>보고, 비교하고, 안전하게 준비해요</p>
+        </div>
+      </div>
+
+      <div class="search-area">
+
+        <form id="searchForm" class="search-box">
+          <input
+            id="cityInput"
+            type="text"
+            placeholder="도시 검색 예: 강릉"
+            autocomplete="off"
+          >
+
+          <button id="searchButton" type="submit">검색</button>
+
+          <div id="searchResults"></div>
+        </form>
+
+        <button id="locationButton" type="button">⌖ 현재 위치</button>
+
+      </div>
+    </div>
+
+    <nav id="cityButtons" class="city-buttons"></nav>
+
+  </div>
+</header>
+
+<main class="container">
+
+  <div id="errorBox"></div>
+
+  <div id="loading">
+    <div>
+      <div class="spinner"></div>
+      날씨 정보를 불러오는 중...
+    </div>
+  </div>
+
+  <div id="content">
+
+    <section id="hero" class="hero">
+      <div class="hero-grid">
+
+        <div>
+          <div id="locationName" class="location-name"></div>
+          <div id="dateText" class="date-text"></div>
+
+          <div class="current-weather">
+            <div id="weatherEmoji" class="weather-emoji"></div>
+
+            <div>
+              <div id="temperature" class="temperature"></div>
+              <div id="condition" class="condition"></div>
+            </div>
+          </div>
+
+          <div id="weatherTip" class="weather-tip"></div>
+        </div>
+
+        <div class="today-summary">
+          <div>
+            <small>체감 온도</small>
+            <strong id="feelsLike"></strong>
+          </div>
+
+          <div>
+            <small>오늘 강수 확률</small>
+            <strong id="todayRainChance"></strong>
+          </div>
+
+          <div>
+            <small>최고 / 최저</small>
+            <strong id="highLow"></strong>
+          </div>
+
+          <div>
+            <small>자외선 지수</small>
+            <strong id="uvIndex"></strong>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section">
+
+      <div class="section-title">
+        <div>
+          <p>꼭 살펴볼 기상 요소</p>
+          <h2>지금의 날씨 관측판</h2>
+        </div>
+
+        <button id="refreshButton" type="button">↻ 새로고침</button>
+      </div>
+
+      <div id="requiredWeather" class="required-grid"></div>
+      <div id="extraWeather" class="extra-grid"></div>
+
+    </section>
+
+    <section class="section">
+
+      <div class="section-title">
+        <div>
+          <h2>📅 7일 예보</h2>
+        </div>
+      </div>
+
+      <div id="forecast" class="forecast-grid"></div>
+
+    </section>
+
+    <section class="section learning-grid">
+
+      <article class="learning-card green">
+        <h3>📘 5학년 날씨 탐구</h3>
+        <p>
+          구름이 많아지고 습도가 높아지며 기압이 내려가면
+          날씨가 흐려질 수 있어요. 오늘 수치를 공책에 기록하고
+          내일의 날씨와 비교해 보세요.
+        </p>
+      </article>
+
+      <article class="learning-card yellow">
+        <h3>🧭 바람 읽는 방법</h3>
+        <p id="windLesson"></p>
+      </article>
+
+    </section>
+
+    <footer>
+      날씨 자료: Open-Meteo<br>
+      위치별 예측 자료이므로 실제 관측 결과와 다를 수 있습니다.<br>
+      <span id="updatedTime"></span>
+    </footer>
+
+  </div>
+</main>
+
+<script>
+  const majorCities = [
+    { name: "서울", latitude: 37.5665, longitude: 126.9780, area: "서울특별시" },
+    { name: "부산", latitude: 35.1796, longitude: 129.0756, area: "부산광역시" },
+    { name: "대구", latitude: 35.8714, longitude: 128.6014, area: "대구광역시" },
+    { name: "인천", latitude: 37.4563, longitude: 126.7052, area: "인천광역시" },
+    { name: "광주", latitude: 35.1595, longitude: 126.8526, area: "광주광역시" },
+    { name: "대전", latitude: 36.3504, longitude: 127.3845, area: "대전광역시" },
+    { name: "울산", latitude: 35.5384, longitude: 129.3114, area: "울산광역시" },
+    { name: "세종", latitude: 36.4800, longitude: 127.2890, area: "세종특별자치시" },
+    { name: "제주", latitude: 33.4996, longitude: 126.5312, area: "제주특별자치도" },
+    { name: "제천", latitude: 37.1326, longitude: 128.1910, area: "충청북도" },
+    { name: "충주", latitude: 36.9910, longitude: 127.9259, area: "충청북도" },
+    { name: "청주", latitude: 36.6424, longitude: 127.4890, area: "충청북도" }
+  ];
+
+  let selectedPlace = {
+    name: "서울",
+    latitude: 37.5665,
+    longitude: 126.9780,
+    area: "서울특별시"
+  };
+
+  let weatherData = null;
+
+  const element = id => document.getElementById(id);
+
+  function getWeatherInformation(code, isDay = 1) {
+    const weatherCodes = {
+      0: {
+        text: isDay ? "맑음" : "맑은 밤",
+        emoji: isDay ? "☀️" : "🌙",
+        colors: ["#38bdf8", "#2563eb", "#4338ca"]
+      },
+      1: {
+        text: "대체로 맑음",
+        emoji: "🌤️",
+        colors: ["#38bdf8", "#2563eb", "#4338ca"]
+      },
+      2: {
+        text: "구름 조금",
+        emoji: "⛅",
+        colors: ["#06b6d4", "#3b82f6", "#475569"]
+      },
+      3: {
+        text: "흐림",
+        emoji: "☁️",
+        colors: ["#94a3b8", "#64748b", "#334155"]
+      },
+      45: {
+        text: "안개",
+        emoji: "🌫️",
+        colors: ["#cbd5e1", "#64748b", "#1d4ed8"]
+      },
+      48: {
+        text: "서리 안개",
+        emoji: "🌫️",
+        colors: ["#cbd5e1", "#64748b", "#1d4ed8"]
+      },
+      51: {
+        text: "약한 이슬비",
+        emoji: "🌦️",
+        colors: ["#64748b", "#2563eb", "#312e81"]
+      },
+      53: {
+        text: "이슬비",
+        emoji: "🌦️",
+        colors: ["#64748b", "#2563eb", "#312e81"]
+      },
+      55: {
+        text: "강한 이슬비",
+        emoji: "🌧️",
+        colors: ["#475569", "#1d4ed8", "#1e1b4b"]
+      },
+      61: {
+        text: "약한 비",
+        emoji: "🌦️",
+        colors: ["#64748b", "#2563eb", "#312e81"]
+      },
+      63: {
+        text: "비",
+        emoji: "🌧️",
+        colors: ["#475569", "#1d4ed8", "#1e1b4b"]
+      },
+      65: {
+        text: "강한 비",
+        emoji: "🌧️",
+        colors: ["#334155", "#1e40af", "#172554"]
+      },
+      71: {
+        text: "약한 눈",
+        emoji: "🌨️",
+        colors: ["#bae6fd", "#38bdf8", "#1d4ed8"]
+      },
+      73: {
+        text: "눈",
+        emoji: "❄️",
+        colors: ["#bae6fd", "#38bdf8", "#1d4ed8"]
+      },
+      75: {
+        text: "강한 눈",
+        emoji: "❄️",
+        colors: ["#e2e8f0", "#0ea5e9", "#1e40af"]
+      },
+      80: {
+        text: "소나기",
+        emoji: "🌦️",
+        colors: ["#64748b", "#2563eb", "#312e81"]
+      },
+      81: {
+        text: "소나기",
+        emoji: "🌧️",
+        colors: ["#475569", "#1d4ed8", "#1e1b4b"]
+      },
+      82: {
+        text: "강한 소나기",
+        emoji: "⛈️",
+        colors: ["#334155", "#3730a3", "#020617"]
+      },
+      95: {
+        text: "천둥번개",
+        emoji: "⛈️",
+        colors: ["#334155", "#3730a3", "#020617"]
+      },
+      96: {
+        text: "우박과 천둥",
+        emoji: "⛈️",
+        colors: ["#1e293b", "#312e81", "#000000"]
+      },
+      99: {
+        text: "강한 우박과 천둥",
+        emoji: "⛈️",
+        colors: ["#1e293b", "#312e81", "#000000"]
+      }
+    };
+
+    return weatherCodes[code] || {
+      text: "날씨 변화",
+      emoji: "🌈",
+      colors: ["#38bdf8", "#4338ca"]
+    };
+  }
+
+  function getWindDirection(degrees = 0) {
+    const directions = [
+      "북풍",
+      "북동풍",
+      "동풍",
+      "남동풍",
+      "남풍",
+      "남서풍",
+      "서풍",
+      "북서풍"
+    ];
+
+    const index = Math.round(degrees / 45) % 8;
+    return directions[index];
+  }
+
+  function formatDate(dateString, longForm = false) {
+    const date = new Date(
+      dateString + (dateString.length === 10 ? "T12:00:00" : "")
+    );
+
+    if (longForm) {
+      return new Intl.DateTimeFormat("ko-KR", {
+        month: "long",
+        day: "numeric",
+        weekday: "long"
+      }).format(date);
+    }
+
+    return new Intl.DateTimeFormat("ko-KR", {
+      month: "numeric",
+      day: "numeric",
+      weekday: "short"
+    }).format(date);
+  }
+
+  function formatTime(dateString) {
+    if (!dateString) {
+      return "-";
+    }
+
+    return new Intl.DateTimeFormat("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    }).format(new Date(dateString));
+  }
+
+  function showError(message) {
+    const errorBox = element("errorBox");
+
+    if (!message) {
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+      return;
+    }
+
+    errorBox.textContent = "⚠️ " + message;
+    errorBox.style.display = "block";
+  }
+
+  function makeWeatherCard(icon, label, value, unit, note) {
+    return `
+      <article class="weather-card">
+        <span class="card-icon">${icon}</span>
+
+        <div class="card-label">${label}</div>
+
+        <div class="card-value">
+          ${value ?? "-"}
+          <span class="card-unit">${unit}</span>
+        </div>
+
+        <div class="card-note">${note}</div>
+      </article>
+    `;
+  }
+
+  function drawCityButtons() {
+    const cityButtonArea = element("cityButtons");
+
+    cityButtonArea.innerHTML = majorCities.map(city => `
+      <button
+        type="button"
+        class="city-button ${selectedPlace.name === city.name ? "active" : ""}"
+        data-city="${city.name}"
+      >
+        ${city.name}
+      </button>
+    `).join("");
+
+    document.querySelectorAll(".city-button").forEach(button => {
+      button.addEventListener("click", function () {
+        const city = majorCities.find(
+          item => item.name === button.dataset.city
+        );
+
+        selectPlace(city);
+      });
+    });
+  }
+
+  async function loadWeather(place) {
+    element("loading").style.display = "grid";
+    element("content").style.display = "none";
+
+    showError("");
+
+    const currentVariables = [
+      "temperature_2m",
+      "relative_humidity_2m",
+      "apparent_temperature",
+      "is_day",
+      "precipitation",
+      "rain",
+      "weather_code",
+      "cloud_cover",
+      "surface_pressure",
+      "wind_speed_10m",
+      "wind_direction_10m",
+      "wind_gusts_10m"
+    ].join(",");
+
+    const dailyVariables = [
+      "weather_code",
+      "temperature_2m_max",
+      "temperature_2m_min",
+      "precipitation_sum",
+      "precipitation_probability_max",
+      "wind_speed_10m_max",
+      "sunrise",
+      "sunset",
+      "uv_index_max"
+    ].join(",");
+
+    const weatherUrl =
+      "https://api.open-meteo.com/v1/forecast" +
+      "?latitude=" + place.latitude +
+      "&longitude=" + place.longitude +
+      "&current=" + currentVariables +
+      "&daily=" + dailyVariables +
+      "&timezone=auto" +
+      "&forecast_days=7";
+
+    try {
+      const response = await fetch(weatherUrl);
+
+      if (!response.ok) {
+        throw new Error("날씨 API 오류");
+      }
+
+      weatherData = await response.json();
+
+      displayWeather();
+      element("content").style.display = "block";
+    } catch (error) {
+      showError(
+        "날씨 정보를 불러오지 못했습니다. 인터넷 연결을 확인한 후 새로고침해 주세요."
+      );
+
+      console.error(error);
+    } finally {
+      element("loading").style.display = "none";
+    }
+  }
+
+  function displayWeather() {
+    const current = weatherData.current;
+    const daily = weatherData.daily;
+
+    const weatherInfo = getWeatherInformation(
+      current.weather_code,
+      current.is_day
+    );
+
+    element("hero").style.background =
+      `linear-gradient(135deg,
+        ${weatherInfo.colors[0]},
+        ${weatherInfo.colors[1]},
+        ${weatherInfo.colors[2] || weatherInfo.colors[1]})`;
+
+    element("locationName").textContent =
+      "📍 " + selectedPlace.name +
+      (selectedPlace.area ? " · " + selectedPlace.area : "");
+
+    element("dateText").textContent =
+      formatDate(current.time, true);
+
+    element("weatherEmoji").textContent = weatherInfo.emoji;
+    element("temperature").textContent =
+      Math.round(current.temperature_2m) + "°";
+
+    element("condition").textContent = weatherInfo.text;
+
+    element("feelsLike").textContent =
+      Math.round(current.apparent_temperature) + "°C";
+
+    element("todayRainChance").textContent =
+      daily.precipitation_probability_max[0] + "%";
+
+    element("highLow").textContent =
+      Math.round(daily.temperature_2m_max[0]) + "° / " +
+      Math.round(daily.temperature_2m_min[0]) + "°";
+
+    element("uvIndex").textContent =
+      Math.round(daily.uv_index_max[0]);
+
+    let tip =
+      "야외 활동하기 무난한 날씨예요. 예보가 바뀌는지도 살펴보세요.";
+
+    if (current.precipitation > 0) {
+      tip =
+        "비나 눈이 오고 있어요. 우산과 미끄럽지 않은 신발을 챙겨요.";
+    } else if (current.wind_speed_10m >= 30) {
+      tip =
+        "바람이 강해요. 날아가는 물건을 조심하고 안전한 곳에서 활동해요.";
+    } else if (current.temperature_2m >= 30) {
+      tip =
+        "더운 날이에요. 물을 자주 마시고 그늘에서 쉬어요.";
+    } else if (current.temperature_2m <= 5) {
+      tip =
+        "추운 날이에요. 따뜻한 겉옷과 장갑을 챙겨요.";
+    } else if (daily.uv_index_max[0] >= 6) {
+      tip =
+        "자외선이 강해요. 모자와 자외선 차단제를 준비해요.";
+    }
+
+    element("weatherTip").textContent = "💡 " + tip;
+
+    element("requiredWeather").innerHTML =
+      makeWeatherCard(
+        "🌡️",
+        "기온",
+        current.temperature_2m,
+        "°C",
+        "공기의 따뜻하고 차가운 정도"
+      ) +
+      makeWeatherCard(
+        "💨",
+        "바람",
+        current.wind_speed_10m,
+        "km/h",
+        getWindDirection(current.wind_direction_10m) +
+        " · 돌풍 " + current.wind_gusts_10m + "km/h"
+      ) +
+      makeWeatherCard(
+        "💧",
+        "습도",
+        current.relative_humidity_2m,
+        "%",
+        "공기 속 수증기의 상대적인 양"
+      ) +
+      makeWeatherCard(
+        "☁️",
+        "구름의 양",
+        current.cloud_cover,
+        "%",
+        "하늘을 구름이 덮고 있는 비율"
+      ) +
+      makeWeatherCard(
+        "🌧️",
+        "강수량",
+        current.precipitation,
+        "mm",
+        "현재 비 " + current.rain +
+        "mm · 오늘 합계 " + daily.precipitation_sum[0] + "mm"
+      );
+
+    element("extraWeather").innerHTML =
+      makeWeatherCard(
+        "⏱️",
+        "기압",
+        Math.round(current.surface_pressure),
+        "hPa",
+        "공기가 지표면을 누르는 힘"
+      ) +
+      makeWeatherCard(
+        "☂️",
+        "강수 확률",
+        daily.precipitation_probability_max[0],
+        "%",
+        "오늘 비나 눈이 내릴 가능성"
+      ) +
+      makeWeatherCard(
+        "🌅",
+        "해 뜨는 시각",
+        formatTime(daily.sunrise[0]),
+        "",
+        "해 지는 시각 " + formatTime(daily.sunset[0])
+      ) +
+      makeWeatherCard(
+        "☀️",
+        "자외선 지수",
+        Math.round(daily.uv_index_max[0]),
+        "",
+        daily.uv_index_max[0] >= 6
+          ? "강함: 모자와 자외선 차단제가 필요해요"
+          : "야외 활동 전에 자외선 지수를 확인해요"
+      );
+
+    element("forecast").innerHTML =
+      daily.time.map((day, index) => {
+        const information =
+          getWeatherInformation(daily.weather_code[index]);
+
+        return `
+          <article class="forecast-day ${index === 0 ? "today" : ""}">
+            <div class="day-name">
+              ${index === 0 ? "오늘" : formatDate(day)}
+            </div>
+
+            <div class="day-emoji">
+              ${information.emoji}
+            </div>
+
+            <div class="day-condition">
+              ${information.text}
+            </div>
+
+            <div>
+              <span class="high">
+                ${Math.round(daily.temperature_2m_max[index])}°
+              </span>
+
+              <span class="low">
+                ${Math.round(daily.temperature_2m_min[index])}°
+              </span>
+            </div>
+
+            <div class="rain-chance">
+              💧 ${daily.precipitation_probability_max[index]}%
+            </div>
+          </article>
+        `;
+      }).join("");
+
+    element("windLesson").innerHTML =
+      "‘북풍’은 북쪽에서 남쪽으로 불어오는 바람이에요. " +
+      "현재 바람은 <strong>" +
+      getWindDirection(current.wind_direction_10m) +
+      "</strong>이고, 속도는 <strong>" +
+      current.wind_speed_10m +
+      "km/h</strong>예요.";
+
+    element("updatedTime").textContent =
+      "마지막 업데이트 " +
+      new Date().toLocaleTimeString("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }) +
+      " · 위도 " + selectedPlace.latitude.toFixed(2) +
+      " · 경도 " + selectedPlace.longitude.toFixed(2);
+
+    drawCityButtons();
+  }
+
+  function selectPlace(place) {
+    selectedPlace = {
+      name: place.name,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      area: place.area || place.admin1 || ""
+    };
+
+    element("searchResults").style.display = "none";
+    element("cityInput").value = "";
+
+    drawCityButtons();
+    loadWeather(selectedPlace);
+  }
+
+  element("searchForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const cityName = element("cityInput").value.trim();
+
+    if (cityName.length < 2) {
+      showError("도시 이름을 두 글자 이상 입력해 주세요.");
+      return;
+    }
+
+    showError("");
+
+    const geocodingUrl =
+      "https://geocoding-api.open-meteo.com/v1/search" +
+      "?name=" + encodeURIComponent(cityName) +
+      "&count=6" +
+      "&language=ko" +
+      "&format=json" +
+      "&countryCode=KR";
+
+    try {
+      const response = await fetch(geocodingUrl);
+
+      if (!response.ok) {
+        throw new Error("장소 검색 오류");
+      }
+
+      const data = await response.json();
+      const results = data.results || [];
+
+      if (results.length === 0) {
+        showError(
+          "검색 결과가 없습니다. 시 또는 군 이름을 다시 확인해 주세요."
+        );
+        return;
+      }
+
+      const resultArea = element("searchResults");
+
+      resultArea.innerHTML = results.map((place, index) => `
+        <button
+          type="button"
+          class="search-result"
+          data-index="${index}"
+        >
+          <strong>📍 ${place.name}</strong>
+          <small>
+            ${[place.admin1, place.country].filter(Boolean).join(", ")}
+          </small>
+        </button>
+      `).join("");
+
+      resultArea.style.display = "block";
+
+      document.querySelectorAll(".search-result").forEach(button => {
+        button.addEventListener("click", function () {
+          const place = results[Number(button.dataset.index)];
+          selectPlace(place);
+        });
+      });
+
+    } catch (error) {
+      showError(
+        "장소를 검색하지 못했습니다. 인터넷 연결을 확인해 주세요."
+      );
+
+      console.error(error);
+    }
+  });
+
+  element("locationButton").addEventListener("click", function () {
+    if (!navigator.geolocation) {
+      showError("이 브라우저에서는 현재 위치를 사용할 수 없습니다.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function (position) {
+        selectPlace({
+          name: "현재 위치",
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          area: ""
+        });
+      },
+
+      function () {
+        showError(
+          "현재 위치를 사용할 수 없습니다. 브라우저의 위치 권한을 허용해 주세요."
+        );
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000
+      }
+    );
+  });
+
+  element("refreshButton").addEventListener("click", function () {
+    loadWeather(selectedPlace);
+  });
+
+  drawCityButtons();
+  loadWeather(selectedPlace);
+</script>
+
+</body>
+</html>
